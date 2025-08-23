@@ -195,7 +195,7 @@ export default function SplitBill() {
             Split the Bill
           </h1>
           <p className="text-lg text-slate-600 mt-2">
-            Add people and assign items to calculate everyone's share.
+            Add people and assign items to calculate everyone&apos;s share.
           </p>
         </header>
 
