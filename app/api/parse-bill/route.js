@@ -35,7 +35,7 @@ export async function POST(request) {
             {"name": "Another Item", "price": "0.00"}
           ],
           "total": "0.00",
-          "currency": "USD"
+          "currency": "INR"
         }
         
         Only return the JSON data, no additional text.`
