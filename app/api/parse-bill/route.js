@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
+
 const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GENAI_API_KEY
 });
@@ -14,7 +15,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Convert file to base64
+   
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const base64Image = buffer.toString('base64');

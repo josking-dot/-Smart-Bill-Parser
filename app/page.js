@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useEffect } from 'react';
+import { useState} from 'react';
 import { useRouter } from 'next/navigation';
 
 const UploadIcon = () => (
