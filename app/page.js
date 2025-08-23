@@ -1,103 +1,212 @@
-import Image from "next/image";
+'use client';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+const UploadIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto text-gray-400">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </svg>
+);
+
+const Spinner = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin h-5 w-5 mr-3">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+);
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    const router = useRouter();
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [billData, setBillData] = useState(null);
+    const [error, setError] = useState(null);
+    const [editableItems, setEditableItems] = useState([]);
+    const [isDragOver, setIsDragOver] = useState(false);
+    
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  
+
+  // Function to handle file selection from input or drag-and-drop
+  const handleFileSelect = (file) => {
+    if (file && file.type.startsWith('image/')) {
+      setSelectedFile(file);
+      setError(null);
+      // Create a preview URL for the selected image
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setError('Please select a valid image file');
+      setSelectedFile(null);
+      setPreviewUrl(null);
+    }
+  };
+  // Handler for the file input change event
+  const onFileChange = (event) => {
+    handleFileSelect(event.target.files[0]);
+  };
+
+  // Handler for drag-and-drop events
+  const onDragOver = (event) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const onDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const onDrop = (event) => {
+    event.preventDefault();
+    setIsDragOver(false);
+    handleFileSelect(event.dataTransfer.files[0]);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setError('Please select a file first');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setBillData(null); // Clear previous results
+
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const response = await fetch('/api/parse-bill', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Something went wrong');
+      }
+
+      setBillData(result);
+      const items = result.items || [];
+      setEditableItems(items);
+      // compute total if not provided by the API
+      const totalValue = result.total != null
+        ? String(result.total)
+        : (items.reduce((s, it) => {
+            const n = parseFloat(String(it?.price || '').replace(/[^0-9.-]+/g, '')) || 0;
+            return s + n;
+          }, 0)).toFixed(2);
+      // persist in the shape item.js expects and navigate to the editor route
+      try {
+          localStorage.setItem('billData', JSON.stringify({ items, total: totalValue }));
+          router.push('/edited');
+      } catch (e) {
+        // if storage or routing fails, still keep local state
+        console.warn('Failed to persist or navigate to edited route', e);
+      }
+
+    } catch (err) {
+      setError(err.message || 'Failed to upload and process the image');
+    } finally {
+      setLoading(false);
+    }
+  
+
+  };
+
+  return (
+       <div className="min-h-screen bg-slate-100 font-sans text-slate-800">
+       <style>{`
+        @keyframes gradient-animation {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient-animation 2s ease infinite;
+        }
+      `}</style>
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header className="text-center mb-10">
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">
+            Smart Bill Parser
+          </h1>
+          <p className="text-lg text-slate-600 mt-2">
+            Upload an image of your bill to automatically extract the details.
+          </p>
+        </header>
+        
+        <div className="max-w-2xl mx-auto">
+            <div className="flex justify-center">
+              {/* Centered Upload Section */}
+              <div className="w-full bg-white rounded-2xl shadow-lg p-6 flex flex-col">
+                <h2 className="text-2xl font-semibold mb-5 text-slate-800 border-b border-slate-200 pb-3">Upload Your Bill</h2>
+                
+                <div 
+                  className={`flex-grow flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 transition-colors duration-200 ${isDragOver ? 'border-orange-500 bg-orange-50' : 'border-slate-300'}`}
+                  onDragOver={onDragOver}
+                  onDragLeave={onDragLeave}
+                  onDrop={onDrop}
+                >
+                  <input
+                    type="file"
+                    id="file-upload"
+                    accept="image/*"
+                    onChange={onFileChange}
+                    className="hidden"
+                  />
+                  {!previewUrl ? (
+                    <label htmlFor="file-upload" className="text-center cursor-pointer">
+                      <UploadIcon />
+                      <p className="mt-2 text-sm font-semibold text-orange-600">Click to upload or drag and drop</p>
+                      <p className="text-xs text-slate-500">PNG, JPG up to 10MB</p>
+                    </label>
+                  ) : (
+                    <div className="text-center">
+                        <img src={previewUrl} alt="Bill preview" className="max-h-40 rounded-lg mx-auto mb-4 shadow-md"/>
+                        <p className="text-sm text-slate-700 font-medium truncate max-w-xs">{selectedFile?.name}</p>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleUpload}
+                  disabled={!selectedFile || loading}
+                  className={`mt-6 w-full flex items-center justify-center text-white px-6 py-3 rounded-lg font-semibold text-lg transition-all duration-300 shadow-sm hover:shadow-md disabled:cursor-not-allowed disabled:opacity-75 animate-gradient ${
+                    loading
+                      ? 'bg-gradient-to-r from-red-500 via-rose-500 to-red-500'
+                      : 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500'
+                  }`}
+                >
+                  {loading && <Spinner />}
+                  {loading ? 'Processing...' : 'Parse Bill'}
+                </button>
+                
+                {selectedFile && !loading && (
+                    <button onClick={() => { setSelectedFile(null); setPreviewUrl(null); }} className="text-sm text-red-500 hover:underline mt-4">
+                        Remove Bill
+                    </button>
+                )}
+
+                {error && (
+                  <div className="mt-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-r-lg text-sm">
+                    <p><span className="font-bold">Error:</span> {error}</p>
+                  </div>
+                )}
+              </div>
+
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+     
   );
 }
