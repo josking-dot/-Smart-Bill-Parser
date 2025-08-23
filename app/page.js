@@ -1,6 +1,7 @@
 'use client';
 import { useState} from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const UploadIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 mx-auto text-gray-400">
@@ -171,7 +172,13 @@ export default function Home() {
                     </label>
                   ) : (
                     <div className="text-center">
-                        <img src={previewUrl} alt="Bill preview" className="max-h-40 rounded-lg mx-auto mb-4 shadow-md"/>
+                        <Image 
+                          src={previewUrl} 
+                          alt="Bill preview" 
+                          width={160}
+                          height={160}
+                          className="max-h-40 rounded-lg mx-auto mb-4 shadow-md"
+                        />
                         <p className="text-sm text-slate-700 font-medium truncate max-w-xs">{selectedFile?.name}</p>
                     </div>
                   )}
