@@ -104,36 +104,34 @@ export default function Home() {
             const n = parseFloat(String(it?.price || '').replace(/[^0-9.-]+/g, '')) || 0;
             return s + n;
           }, 0)).toFixed(2);
-      // persist in the shape item.js expects and navigate to the editor route
-      try {
-          localStorage.setItem('billData', JSON.stringify({ items, total: totalValue }));
-          router.push('/edited');
-      } catch (e) {
-        // if storage or routing fails, still keep local state
-        console.warn('Failed to persist or navigate to edited route', e);
-      }
+      
+      // Store data in localStorage for the edited page
+      localStorage.setItem('billData', JSON.stringify({ items, total: totalValue }));
+      console.log('Data saved to localStorage:', { items, total: totalValue });
+      
+      // Force navigation to the edited page
+      console.log('Navigating to /edited page');
+      router.push('/edited');
 
     } catch (err) {
       setError(err.message || 'Failed to upload and process the image');
     } finally {
-      setLoading(false);
+      setLoading(false);    
     }
-  
-
   };
 
   return (
        <div className="min-h-screen bg-slate-100 font-sans text-slate-800">
        <style>{`
-        @keyframes gradient-animation {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient-animation 2s ease infinite;
-        }
+            @keyframes gradient-animation {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+            .animate-gradient {
+              background-size: 200% 200%;
+              animation: gradient-animation 2s ease infinite;
+            }
       `}</style>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <header className="text-center mb-10">

@@ -36,13 +36,18 @@ export default function Item() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem("billData");
+      console.log('Raw data from localStorage:', raw);
       if (raw) {
         const parsed = JSON.parse(raw);
+        console.log('Parsed bill data:', parsed);
         setBillData(parsed);
         setEditableItems(Array.isArray(parsed.items) ? parsed.items : []);
         setTotal(parsed.total != null ? String(parsed.total) : "0.00");
+      } else {
+        console.log('No billData found in localStorage');
       }
     } catch (e) {
+      console.error('Error parsing bill data:', e);
       // ignore parse errors
     } finally {
       setLoading(false);

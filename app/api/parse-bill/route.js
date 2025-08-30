@@ -42,12 +42,10 @@ export async function POST(request) {
         Only return the JSON data, no additional text.`
       }
     ];
-
-    // Generate content with inline image data
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
-      contents: contents,
-    });
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: contents,
+      });
 
     const text = response.text;
     
